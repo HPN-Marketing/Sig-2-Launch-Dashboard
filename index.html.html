@@ -1,0 +1,979 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>HPN Launch Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: sticky header with round + T-minus, department tabs, then either an overview or a deliverable x product matrix (deliverables down, grouped products across). */
+:root{
+  --bg:#f3f6f9; --surface:#ffffff; --surface-2:#eaf0f5; --ink:#132029; --muted:#5a6a78; --line:#d6dfe7;
+  --accent:#2a93d4; --accent-ink:#ffffff; --mark:#ffcc00; --mark-ink:#2b2200;
+  --ns-bg:#fbe4e1; --ns-fg:#a1271c; --ip-bg:#fff2bf; --ip-fg:#6f5200; --ok-bg:#dcf2e2; --ok-fg:#1c6a33;
+  --na:#e3e8ed; --na-line:#d2d9e0; --danger:#c0392b;
+  --f-display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e151b; --surface:#152029; --surface-2:#1b2833; --ink:#e4ecf2; --muted:#93a5b4; --line:#26363f;
+  --accent:#4aa9e4; --accent-ink:#06121b; --mark:#ffd633; --mark-ink:#2b2200;
+  --ns-bg:#3b1e1b; --ns-fg:#ffa197; --ip-bg:#3a3012; --ip-fg:#ffd866; --ok-bg:#14321f; --ok-fg:#86dc9f;
+  --na:#1a252e; --na-line:#22303a; --danger:#ff7b6b; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e151b; --surface:#152029; --surface-2:#1b2833; --ink:#e4ecf2; --muted:#93a5b4; --line:#26363f;
+  --accent:#4aa9e4; --accent-ink:#06121b; --mark:#ffd633; --mark-ink:#2b2200;
+  --ns-bg:#3b1e1b; --ns-fg:#ffa197; --ip-bg:#3a3012; --ip-fg:#ffd866; --ok-bg:#14321f; --ok-fg:#86dc9f;
+  --na:#1a252e; --na-line:#22303a; --danger:#ff7b6b; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.45;margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{padding-inline:16px;max-width:1600px;margin:0 auto}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--surface);border-bottom:1px solid var(--line)}
+.top-row{display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px;padding-block:14px 10px}
+.brand{display:flex;align-items:baseline;gap:10px;min-width:0}
+.brand .kicker{font-family:var(--f-display);font-weight:600;letter-spacing:.08em;text-transform:uppercase;font-size:13px;color:var(--accent)}
+.brand h1{font-family:var(--f-display);font-weight:700;font-size:28px;line-height:1;margin:0;text-wrap:balance}
+.round-pick{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:13px}
+.round-pick select{background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:4px 8px}
+.tminus{margin-left:auto;display:flex;align-items:center;gap:10px}
+.tm-badge{font-family:var(--f-display);font-weight:700;font-size:20px;letter-spacing:.02em;background:var(--mark);color:var(--mark-ink);padding:3px 10px;border-radius:4px;white-space:nowrap}
+.tm-date{color:var(--muted);font-size:13px}
+.linkbtn{background:none;border:0;padding:0;color:var(--accent);text-decoration:underline;text-underline-offset:2px}
+nav.tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
+nav.tabs button{background:none;border:0;border-bottom:3px solid transparent;padding:8px 14px 9px;font-family:var(--f-display);font-weight:600;font-size:16px;letter-spacing:.02em;color:var(--muted);white-space:nowrap;display:flex;gap:8px;align-items:center}
+nav.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+nav.tabs .pct{font-family:var(--f-mono);font-size:11px;font-weight:500;color:var(--muted)}
+main{padding-block:20px 60px;display:grid;gap:22px}
+.banner{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px;color:var(--muted)}
+.banner strong{color:var(--ink)}
+h2.sec{font-family:var(--f-display);font-weight:700;font-size:20px;margin:0 0 10px;letter-spacing:.01em}
+.muted{color:var(--muted)}
+.mono{font-family:var(--f-mono);font-size:12px}
+/* KPIs */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 14px}
+.kpi .lbl{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.kpi .val{font-family:var(--f-display);font-weight:700;font-size:32px;line-height:1.1;font-variant-numeric:tabular-nums}
+.kpi .sub{font-size:12px;color:var(--muted)}
+/* bars */
+.bar{display:flex;height:8px;border-radius:4px;overflow:hidden;background:var(--ns-bg)}
+.bar i{display:block;height:100%}
+.bar .b-ok{background:var(--ok-fg)} .bar .b-ip{background:var(--mark)}
+.depts{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.dept{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px;display:grid;gap:8px;text-align:left}
+.dept:hover{border-color:var(--accent)}
+.dept .hd{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.dept .nm{font-family:var(--f-display);font-weight:700;font-size:19px}
+.dept .p{font-family:var(--f-mono);font-size:13px}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+.legend span{display:inline-flex;gap:6px;align-items:center}
+.legend i{width:10px;height:10px;border-radius:2px;display:inline-block}
+.two{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:22px;align-items:start}
+@media (max-width:980px){.two{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px;min-width:0}
+.scroll{overflow-x:auto}
+table.grid-sum{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+.grid-sum th,.grid-sum td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+.grid-sum th{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600}
+.grid-sum td.n{min-width:96px}
+.mini{display:flex;align-items:center;gap:8px}
+.mini .bar{width:56px;height:6px}
+.mini b{font-family:var(--f-mono);font-weight:500;font-size:12px;min-width:34px}
+.due-list{display:grid;gap:0}
+.due-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.due-row:last-child{border-bottom:0}
+.due-d{font-family:var(--f-mono);font-size:12px;padding:2px 6px;border-radius:4px;background:var(--surface-2)}
+.due-d.late{background:var(--ns-bg);color:var(--ns-fg)}
+.due-row .t{min-width:0}
+.due-row .t div{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* lineup */
+.lineup{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+.lgroup{background:var(--surface);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.lgroup .gh{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 12px;background:var(--surface-2);border-bottom:1px solid var(--line)}
+.lgroup .gh b{font-family:var(--f-display);font-size:17px;font-weight:700}
+.prod{display:grid;gap:2px;padding:9px 12px;border-bottom:1px solid var(--line);text-align:left;background:none;border-left:0;border-right:0;border-top:0;width:100%}
+.prod:hover{background:var(--surface-2)}
+.prod .pn{font-weight:600}
+.prod .sk{display:flex;gap:12px;flex-wrap:wrap}
+.fsku-missing{color:var(--ns-fg)}
+.addrow{padding:8px 12px}
+.btn{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:6px 12px;font-weight:600;font-size:13px}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.danger{color:var(--danger);border-color:var(--danger)}
+.btn.small{padding:3px 9px;font-size:12px}
+/* toolbar */
+.toolbar{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center}
+.toolbar label{display:flex;gap:6px;align-items:center;font-size:13px;color:var(--muted)}
+.toolbar select{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:5px 8px}
+.toolbar .sp{flex:1}
+.dsum{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.dsum .bar{width:180px}
+.dsum b{font-family:var(--f-display);font-size:22px}
+/* matrix */
+.mx-wrap{overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:8px;max-height:calc(100vh - 210px)}
+table.mx{border-collapse:separate;border-spacing:0;font-size:13px}
+.mx th,.mx td{border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:0;vertical-align:middle}
+.mx thead th{position:sticky;background:var(--surface);z-index:3}
+.mx thead tr:nth-child(1) th{top:0;height:34px}
+.mx thead tr:nth-child(2) th{top:34px;height:44px}
+.mx thead tr:nth-child(3) th{top:78px}
+.mx .c-task{position:sticky;left:0;z-index:2;background:var(--surface);min-width:260px;max-width:260px}
+.mx thead .c-task{z-index:5}
+.mx .c-own,.mx .c-due{min-width:96px}
+.mx thead th.g{font-family:var(--f-display);font-weight:700;font-size:15px;letter-spacing:.03em;text-transform:uppercase;background:var(--surface-2);text-align:left;padding:0 10px;white-space:nowrap}
+.mx thead th.g button,.mx thead th.p button{background:none;border:0;padding:0;text-align:left;font:inherit;color:inherit}
+.mx thead th.p{padding:6px 8px;text-align:left;font-weight:600;min-width:148px;max-width:170px;line-height:1.2}
+.mx thead th.s{padding:5px 8px;text-align:left;font-weight:400;line-height:1.3}
+.mx thead th.s .mono{display:block;font-size:11px;word-break:break-all}
+.mx thead th.s .f{color:var(--muted)}
+.mx thead th.hl{padding:0 10px;text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600}
+.mx tr.secrow td{background:var(--surface-2);font-family:var(--f-display);font-weight:700;font-size:14px;letter-spacing:.05em;text-transform:uppercase;padding:6px 10px;color:var(--muted)}
+.mx tr.secrow td.c-task{background:var(--surface-2)}
+.taskbtn{display:block;width:100%;background:none;border:0;padding:7px 10px;text-align:left}
+.taskbtn .tn{font-weight:600}
+.taskbtn .tnote{display:block;font-size:12px;color:var(--muted)}
+.taskbtn .scope{display:inline-block;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);margin-left:6px;font-weight:600}
+.meta{padding:6px 8px;font-size:12px;white-space:nowrap}
+.meta.late{color:var(--ns-fg);font-weight:600}
+td.na{background:repeating-linear-gradient(135deg,var(--na) 0 6px,var(--na-line) 6px 7px)}
+.cell{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;min-height:38px;border:0;padding:4px 6px;font-size:12px;font-weight:600;letter-spacing:.01em}
+.cell.ns{background:var(--ns-bg);color:var(--ns-fg)}
+.cell.ip{background:var(--ip-bg);color:var(--ip-fg)}
+.cell.done{background:var(--ok-bg);color:var(--ok-fg)}
+.cell:hover{filter:brightness(.96)}
+.cellwrap{display:flex;align-items:stretch;min-height:38px}
+.cellwrap .cell{flex:1;min-width:0}
+.vlink{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:3px 7px;font-size:11px;font-weight:600;text-decoration:none;border-left:1px solid var(--line);white-space:nowrap}
+.vlink.ns{background:var(--ns-bg);color:var(--ns-fg)} .vlink.ip{background:var(--ip-bg);color:var(--ip-fg)} .vlink.done{background:var(--ok-bg);color:var(--ok-fg)}
+a.vlink:hover{text-decoration:underline}
+.vlink.none{font-weight:400;opacity:.6}
+.cell .dot{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.7}
+.cell .span{font-weight:400;opacity:.8}
+.addtask td{padding:6px 10px}
+/* videos */
+.vid-wrap{overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:8px}
+table.vid{border-collapse:separate;border-spacing:0;width:100%;min-width:1180px;font-size:13px}
+.vid th,.vid td{border-bottom:1px solid var(--line);padding:6px 8px;vertical-align:middle;text-align:left}
+.vid thead th{position:sticky;top:0;background:var(--surface);z-index:2;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;white-space:nowrap}
+.vid tr.vsec td{background:var(--surface-2);font-family:var(--f-display);font-size:15px;letter-spacing:.03em}
+.vid .vs-note{font-family:var(--f-body);font-size:12px;letter-spacing:0;margin-left:6px}
+.vid .vcode{font-weight:600;white-space:nowrap}
+.vid .vname{min-width:220px} .vid .tn{font-weight:600} .vid .tnote{display:block;font-size:12px;color:var(--muted)}
+.vn-row{display:flex;gap:10px;align-items:baseline;justify-content:space-between}
+.vlinkt{color:var(--accent);text-decoration:none} .vlinkt:hover{text-decoration:underline}
+.vedit{font-size:12px;white-space:nowrap}
+.chips{display:flex;flex-wrap:wrap;gap:4px;max-width:260px}
+.chip{font-size:11px;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:1px 8px;white-space:nowrap}
+.pill{border:0;border-radius:12px;padding:4px 10px;font-size:12px;font-weight:600;appearance:auto}
+.pill.ns{background:var(--ns-bg);color:var(--ns-fg)} .pill.ip{background:var(--ip-bg);color:var(--ip-fg)} .pill.done{background:var(--ok-bg);color:var(--ok-fg)} .pill.na{background:var(--na);color:var(--muted)}
+span.pill{display:inline-block}
+.thumb{display:inline-flex;gap:6px;align-items:center;font-size:12px;white-space:nowrap}
+.thumb input{width:16px;height:16px;accent-color:var(--ok-fg)}
+.vgrp{display:grid;gap:2px;margin-top:6px}
+/* specs */
+.spec-wrap{overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:8px;max-height:calc(100vh - 190px)}
+table.spec{border-collapse:separate;border-spacing:0;font-size:13px;min-width:100%}
+.spec th,.spec td{border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:0;vertical-align:middle}
+.spec thead th{position:sticky;background:var(--surface);z-index:3;text-align:left}
+.spec thead tr:nth-child(1) th{top:0;height:32px}
+.spec thead tr:nth-child(2) th{top:32px}
+.spec th.g{font-family:var(--f-display);font-weight:700;font-size:15px;letter-spacing:.03em;text-transform:uppercase;background:var(--surface-2);padding:0 10px;white-space:nowrap}
+.spec th.p{padding:6px 8px;font-weight:600;min-width:150px;line-height:1.25}
+.spec th.p .mono{display:block;font-size:10px;font-weight:400;color:var(--muted);word-break:break-all}
+.spec .sl{position:sticky;left:0;z-index:2;background:var(--surface);min-width:230px;max-width:230px;padding:2px 6px}
+.spec thead .sl{z-index:5;padding:0 10px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.spec tr.ssec td{background:var(--surface-2);padding:7px 10px;font-family:var(--f-display);font-size:15px;letter-spacing:.03em}
+.spec tr.ssec td.sl{background:var(--surface-2)}
+.spec tr.ssec .linkbtn{font-family:var(--f-body);font-size:12px;letter-spacing:0;margin-left:6px}
+.slrow{display:flex;align-items:center;gap:2px}
+.si{width:100%;background:transparent;border:1px solid transparent;border-radius:4px;padding:7px 8px;font-size:13px}
+.si:hover{border-color:var(--line)} .si:focus{background:var(--bg);border-color:var(--accent);outline:none}
+.si.lbl{font-weight:600}
+.shint{font-size:11px;color:var(--muted);padding:0 8px 5px}
+.spec .ro{display:block;padding:7px 8px}
+/* features */
+.feat{display:grid;gap:12px;margin-top:22px}
+.fsel{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:5px 8px}
+table.feat-t{min-width:1100px}
+.feat-t td{vertical-align:top;padding-block:9px}
+.feat-t .fname-c{min-width:200px}
+.feat-t .fnotes{max-width:340px;font-size:12px;line-height:1.45}
+.fverify{margin-top:4px;color:var(--ip-fg);font-weight:600}
+.chip.only{display:inline-block;margin-top:4px;background:var(--ip-bg);color:var(--ip-fg);border-color:transparent;font-weight:600}
+/* key dates */
+.tl-wrap{overflow-x:auto;padding-bottom:4px}
+ol.tl{list-style:none;margin:0;padding:6px 0 0;display:flex;gap:10px;min-width:min-content;position:relative}
+.tl-i{position:relative;flex:0 0 190px;border:1px solid var(--line);border-top:4px solid var(--accent);border-radius:6px;padding:9px 10px;display:grid;gap:3px;align-content:start;background:var(--bg)}
+.tl-i.past{opacity:.62;border-top-color:var(--ok-fg)}
+.tl-i.launch{border-top-color:var(--mark);background:var(--ip-bg)}
+.tl-d{font-family:var(--f-display);font-weight:700;font-size:20px;line-height:1.1}
+.tl-k{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+.tl-t{font-weight:600;font-size:13px}
+.tl-i .pill{justify-self:start;font-size:11px;padding:2px 8px}
+.after{font-size:11px;font-weight:600;color:var(--ns-fg)}
+.sh-when{display:flex;flex-direction:column;align-items:flex-end;gap:3px;white-space:nowrap}
+.sh-when .mono{font-size:12px}
+.ref td.dts{padding:5px 8px;font-size:12px;line-height:1.45}
+.ref td.dts .dl{display:inline-block;width:38px;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600}
+.dot-done{color:var(--ok-fg);font-weight:600} .dot-ip{color:var(--ip-fg);font-weight:600} .dot-ns{color:var(--muted);font-weight:600}
+/* file locations */
+.files{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px;display:grid;gap:14px}
+.files-hd{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:flex-end;justify-content:space-between}
+.eyebrow{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--accent);font-weight:600}
+.files-act{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.files-act a.btn{text-decoration:none;display:inline-flex;gap:6px;align-items:center}
+.files-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px 28px}
+.fcol-hd{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding-bottom:6px;border-bottom:2px solid var(--line)}
+.fcol-hd b{font-family:var(--f-display);font-size:16px;letter-spacing:.02em}
+.frow{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+.frow:last-child{border-bottom:0}
+.fmeta{flex:1;min-width:0}
+.fname{font-weight:600}
+.fsub{font-size:12px;color:var(--muted);overflow-wrap:anywhere}
+.fopen{display:inline-flex;gap:5px;align-items:center;font-weight:600;font-size:13px;color:var(--accent);text-decoration:none;white-space:nowrap}
+.fopen:hover{text-decoration:underline}
+.fneed{font-size:12px;color:var(--ns-fg);background:var(--ns-bg);padding:2px 8px;border-radius:4px;white-space:nowrap}
+.fedit{font-size:12px}
+.fempty{padding:10px 0;font-size:13px}
+/* reference */
+.ref-wrap{overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:8px;max-height:calc(100vh - 300px);min-height:320px}
+table.ref{border-collapse:separate;border-spacing:0;width:100%;min-width:1440px;font-size:13px;table-layout:fixed}
+col.w-t{width:19%} col.w-t2{width:21%} col.w-d{width:13%} col.w-s{width:11%} col.w-n{width:5.5%} col.w-st{width:11%} col.w-x{width:84px}
+.ref th,.ref td{border-bottom:1px solid var(--line);padding:0;vertical-align:middle}
+.ref thead th{position:sticky;background:var(--surface);z-index:2;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;padding:7px 8px}
+.ref thead tr.band th{top:0;height:30px;font-family:var(--f-display);font-size:15px;letter-spacing:.06em;color:var(--ink)}
+.ref thead tr:nth-child(2) th{top:30px}
+.ref th.b1{background:var(--surface-2)} .ref th.b2{background:var(--accent);color:var(--accent-ink)}
+.ref th.num,.ref td.num input{text-align:right}
+.ref td.g2,.ref th.g2{border-left:2px solid var(--accent)}
+.ref tr.rsec td{background:var(--surface-2);padding:7px 8px;font-family:var(--f-display);font-size:15px;letter-spacing:.03em}
+.ref tr.rsec td b{font-weight:700}
+.ri{width:100%;background:transparent;border:1px solid transparent;border-radius:4px;padding:6px 7px;font-size:13px;font-variant-numeric:tabular-nums}
+.ri:hover{border-color:var(--line)} .ri:focus{background:var(--bg);border-color:var(--accent);outline:none}
+.ref td.mono .ri,.ref td.mono .ro{font-family:var(--f-mono);font-size:12px}
+.ref .ro{display:block;padding:6px 8px}
+.ref td.miss{background:var(--ns-bg)} .ref td.miss .ri::placeholder{color:var(--ns-fg);opacity:.8}
+.ref td.st-live .ri,.ref td.st-live .ro{color:var(--ok-fg);font-weight:600}
+.ref td.st-pre .ri,.ref td.st-pre .ro{color:var(--ip-fg);font-weight:600}
+.ref td.x{text-align:right;padding-right:6px;white-space:nowrap}
+.trk{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--accent);font-weight:600;margin-right:4px}
+.del{background:none;border:0;color:var(--muted);font-size:16px;padding:2px 6px;border-radius:4px}
+.del:hover{color:var(--danger)} .del.arm{color:var(--danger);font-size:12px;font-weight:600}
+/* modal */
+.ov{position:fixed;inset:0;background:rgba(10,18,26,.45);z-index:50;display:grid;place-items:center;padding:16px}
+.modal{background:var(--surface);border:1px solid var(--line);border-radius:10px;width:min(520px,100%);max-height:calc(100vh - 32px);overflow:auto;padding:18px;display:grid;gap:14px;box-shadow:0 18px 40px rgba(0,0,0,.25)}
+.modal h3{font-family:var(--f-display);font-size:22px;margin:0;line-height:1.15}
+.modal .sub{color:var(--muted);font-size:13px;margin-top:2px}
+.fld{display:grid;gap:4px}
+.fld>span{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600}
+.fld input,.fld select,.fld textarea{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:7px 9px;width:100%}
+.fld textarea{min-height:80px;resize:vertical}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:480px){.row2{grid-template-columns:1fr}}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.seg button{border:2px solid transparent;border-radius:6px;padding:9px 6px;font-weight:600}
+.seg .ns{background:var(--ns-bg);color:var(--ns-fg)} .seg .ip{background:var(--ip-bg);color:var(--ip-fg)} .seg .done{background:var(--ok-bg);color:var(--ok-fg)}
+.seg button[aria-pressed="true"]{border-color:currentColor}
+.checks{display:flex;flex-wrap:wrap;gap:6px 14px}
+.checks label{display:flex;gap:6px;align-items:center;font-size:13px}
+.actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.actions .l{margin-right:auto}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:6px;font-size:13px;z-index:60}
+.empty{padding:24px;text-align:center;color:var(--muted)}
+@media (prefers-reduced-motion:no-preference){.cell,.dept,.btn{transition:filter .12s,border-color .12s}}
+</style>
+
+<header class="top">
+  <div class="wrap">
+    <div class="top-row">
+      <div class="brand"><span class="kicker">Heat Press Nation</span><h1 id="launchName">Collection Launch Tracker</h1></div>
+      <div class="round-pick" id="roundPick" hidden></div>
+      <div class="tminus" id="tminus"></div>
+    </div>
+    <nav class="tabs" id="tabs" role="tablist"></nav>
+  </div>
+</header>
+<main class="wrap" id="main">
+  <div class="banner" id="loading"><strong>Loading the launch tracker.</strong> Groups, products and deliverables appear here once the shared tracker data connects.</div>
+</main>
+<div id="modalRoot"></div>
+<div id="toastRoot"></div>
+
+<script>
+(function(){
+const STATUS=[{k:'ns',label:'Not Started'},{k:'ip',label:'In Progress'},{k:'done',label:'Completed'}];
+const SCOPE_LABEL={product:'Per product',group:'Per group',family:'Whole collection'};
+const S={db:null,conn:'loading',canWrite:true,launches:[],launchId:null,launch:null,groups:[],products:[],tasks:[],cells:new Map(),
+  loaded:{},tab:lsGet('tab')||'reference',refs:[],folders:[],videos:[],ships:[],specs:[],features:[],featFilter:'',pendingRender:false,owner:'',openOnly:false,subs:[],modal:null};
+
+function lsGet(k){try{return localStorage.getItem('hpnlt:'+k)}catch(e){return null}}
+function lsSet(k,v){try{localStorage.setItem('hpnlt:'+k,v)}catch(e){}}
+const $=(s,r=document)=>r.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const byOrder=(a,b)=>(a.order??999)-(b.order??999)||String(a.name||'').localeCompare(String(b.name||''));
+function toast(msg){const r=$('#toastRoot');r.innerHTML='<div class="toast" role="status">'+esc(msg)+'</div>';clearTimeout(toast.t);toast.t=setTimeout(()=>r.innerHTML='',2600)}
+function todayStr(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function daysUntil(ds){if(!ds)return null;const t=new Date(todayStr()+'T00:00:00');const d=new Date(ds+'T00:00:00');return Math.round((d-t)/864e5)}
+function fmtDate(ds){if(!ds)return '';const d=new Date(ds+'T00:00:00');return d.toLocaleDateString(undefined,{month:'short',day:'numeric'})}
+const base=()=>'launches/'+S.launchId;
+
+/* ---------- data helpers ---------- */
+function depts(){return (S.launch&&Array.isArray(S.launch.depts)?S.launch.depts:[])}
+function groupsSorted(){return [...S.groups].sort(byOrder)}
+function productsOf(gid){return S.products.filter(p=>p.group===gid).sort(byOrder)}
+function productsSorted(){const out=[];groupsSorted().forEach(g=>out.push(...productsOf(g.id)));return out}
+function applies(task,gid){return !Array.isArray(task.groups)||task.groups.length===0||task.groups.includes(gid)}
+function targets(task){
+  if(task.scope==='family')return [{id:'all'}];
+  if(task.scope==='group')return groupsSorted().filter(g=>applies(task,g.id)&&productsOf(g.id).length).map(g=>({id:g.id,group:g.id}));
+  return productsSorted().filter(p=>applies(task,p.group)).map(p=>({id:p.id,group:p.group}));
+}
+const cellId=(tid,target)=>tid+'__'+target;
+function status(tid,target){const c=S.cells.get(cellId(tid,target));return (c&&c.status)||'ns'}
+function tally(list){const t={ns:0,ip:0,done:0,total:0};list.forEach(([tid,tg])=>{t[status(tid,tg)]++;t.total++});return t}
+function taskPairs(task){return targets(task).map(t=>[task.id,t.id])}
+function deptTasks(did){return S.tasks.filter(t=>t.dept===did).sort(byOrder)}
+const isVid=dp=>!!(dp&&dp.kind==='videos');
+function vTally(list){const t={ns:0,ip:0,done:0,total:0};list.forEach(v=>{t[STATUS.find(x=>x.k===v.status)?v.status:'ns']++;t.total++});return t}
+function sumT(arr){return arr.reduce((a,t)=>({ns:a.ns+t.ns,ip:a.ip+t.ip,done:a.done+t.done,total:a.total+t.total}),{ns:0,ip:0,done:0,total:0})}
+function deptTally(did){const dp=depts().find(d=>d.id===did);return isVid(dp)?vTally(S.videos):tally(deptTasks(did).flatMap(taskPairs))}
+function deptCount(did){const dp=depts().find(d=>d.id===did);return isVid(dp)?S.videos.length:deptTasks(did).length}
+function videoCoversGroup(v,gid){return Array.isArray(v.products)&&v.products.some(pid=>{const p=S.products.find(x=>x.id===pid);return p&&p.group===gid})}
+function pct(t){return t.total?Math.round(t.done/t.total*100):0}
+function barHtml(t){if(!t.total)return '<div class="bar"></div>';return '<div class="bar" aria-hidden="true"><i class="b-ok" style="width:'+(t.done/t.total*100)+'%"></i><i class="b-ip" style="width:'+(t.ip/t.total*100)+'%"></i></div>'}
+function taskDone(task){const ps=taskPairs(task);return ps.length>0&&ps.every(([a,b])=>status(a,b)==='done')}
+function owners(){return [...new Set(S.tasks.map(t=>(t.owner||'').trim()).filter(Boolean))].sort()}
+function sections(did){const m=new Map();deptTasks(did).forEach(t=>{const s=t.section||'General';if(!m.has(s))m.set(s,[]);m.get(s).push(t)});return m}
+
+/* ---------- render ---------- */
+function render(){
+  renderHeader();
+  const main=$('#main');
+  if(S.conn==='unavailable'){main.innerHTML='<div class="banner"><strong>The shared tracker data is not available in this view.</strong> Open this page signed in to claude.ai to see and update launch progress.</div>';return}
+  if(!S.loaded.launches||(S.launchId&&!S.loaded.tasks)){return}
+  if(!S.launchId){main.innerHTML='<div class="banner"><strong>No launch round has been set up yet.</strong> Once a round is added, its product groups and deliverables show up here.</div>';return}
+  const a=document.activeElement;
+  if(a&&main.contains(a)&&a.matches('input,textarea,select')&&a.closest('.ref-wrap,.spec-wrap')){S.pendingRender=true;return}
+  S.pendingRender=false;
+  const tab=activeTab();
+  if(tab==='reference')renderReference(main);else if(tab==='specs')renderSpecs(main);else if(tab==='overview')renderOverview(main);else renderDept(main,tab);
+}
+function activeTab(){return (S.tab==='overview'||S.tab==='reference'||S.tab==='specs'||depts().find(d=>d.id===S.tab))?S.tab:'reference'}
+function renderHeader(){
+  const L=S.launch;
+  $('#launchName').textContent=L?('Round '+(L.round||1)+': '+(L.name||'Launch')):'Collection Launch Tracker';
+  const rp=$('#roundPick');
+  if(S.launches.length>1){rp.hidden=false;rp.innerHTML='<label for="roundSel">Round</label><select id="roundSel">'+S.launches.map(l=>'<option value="'+esc(l.id)+'"'+(l.id===S.launchId?' selected':'')+'>Round '+esc(l.round)+': '+esc(l.name)+'</option>').join('')+'</select>'}else rp.hidden=true;
+  const tm=$('#tminus');
+  if(!L){tm.innerHTML='';}
+  else{
+    const d=daysUntil(L.launchDate);
+    let badge='Launch date TBD';
+    if(d!==null)badge=d>0?('T-'+d+' days'):d===0?'Launch day':('T+'+(-d)+' days');
+    tm.innerHTML='<span class="tm-badge">'+esc(badge)+'</span><span class="tm-date">'+(L.launchDate?esc(new Date(L.launchDate+'T00:00:00').toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric',year:'numeric'})):'')+'</span>'+(S.canWrite?'<button class="linkbtn" data-act="editLaunch">'+(L.launchDate?'Edit':'Set launch date')+'</button>':'');
+  }
+  const tabs=[{id:'reference',name:'Reference'},{id:'specs',name:'Specs'},{id:'overview',name:'Overview'}].concat(depts());
+  const at=activeTab();
+  $('#tabs').innerHTML=tabs.map(t=>{
+    let p='';if(t.id!=='overview'&&t.id!=='reference'&&t.id!=='specs'&&S.loaded.tasks){const ta=deptTally(t.id);p='<span class="pct">'+pct(ta)+'%</span>'}
+    return '<button role="tab" aria-selected="'+(at===t.id)+'" data-act="tab" data-id="'+esc(t.id)+'">'+esc(t.name)+p+'</button>'}).join('');
+}
+
+function renderOverview(main){
+  const T=sumT(depts().map(d=>deptTally(d.id)));
+  const L=S.launch;const d=daysUntil(L.launchDate);
+  const machines=S.products.length;
+  let h='<section class="kpis">'+
+    kpi('Overall complete',pct(T)+'%',T.done+' of '+T.total+' deliverables')+
+    kpi('In progress',T.ip,'deliverables being worked')+
+    kpi('Not started',T.ns,'deliverables waiting')+
+    kpi('Products',machines,groupsSorted().length+' groups')+
+    kpi('Days to launch',d===null?'TBD':(d>=0?d:'Live'),L.launchDate?fmtDate(L.launchDate):'set a launch date')+
+  '</section>';
+  h+='<section><div class="toolbar" style="margin-bottom:10px"><h2 class="sec" style="margin:0">By department</h2><span class="sp"></span><div class="legend"><span><i style="background:var(--ok-fg)"></i>Completed</span><span><i style="background:var(--mark)"></i>In Progress</span><span><i style="background:var(--ns-bg);border:1px solid var(--ns-fg)"></i>Not Started</span></div></div><div class="depts">';
+  depts().forEach(dp=>{const t=deptTally(dp.id);
+    h+='<button class="dept" data-act="tab" data-id="'+esc(dp.id)+'"><div class="hd"><span class="nm">'+esc(dp.name)+'</span><span class="p">'+pct(t)+'%</span></div>'+barHtml(t)+'<div class="muted" style="font-size:12px">'+t.done+' completed · '+t.ip+' in progress · '+t.ns+' not started · '+deptCount(dp.id)+(isVid(dp)?' videos':' deliverables')+'</div></button>'});
+  h+='</div></section>';
+  // group x dept
+  h+='<section class="two"><div class="card"><h2 class="sec">Progress by group</h2><div class="scroll"><table class="grid-sum"><thead><tr><th>Group</th>'+depts().map(dp=>'<th>'+esc(dp.name)+'</th>').join('')+'</tr></thead><tbody>';
+  const famRow=depts().map(dp=>isVid(dp)?vTally(S.videos.filter(v=>!v.products||!v.products.length)):tally(deptTasks(dp.id).filter(t=>t.scope==='family').map(t=>[t.id,'all'])));
+  h+='<tr><td><b>Whole collection</b><div class="muted" style="font-size:12px">Shared deliverables</div></td>'+famRow.map(miniCell).join('')+'</tr>';
+  groupsSorted().forEach(g=>{
+    const cells=depts().map(dp=>{if(isVid(dp))return vTally(S.videos.filter(v=>videoCoversGroup(v,g.id)));const pairs=[];deptTasks(dp.id).forEach(t=>{if(t.scope==='family'||!applies(t,g.id))return;if(t.scope==='group'){if(productsOf(g.id).length)pairs.push([t.id,g.id])}else productsOf(g.id).forEach(p=>pairs.push([t.id,p.id]))});return tally(pairs)});
+    h+='<tr><td><b>'+esc(g.name)+'</b><div class="muted" style="font-size:12px">'+productsOf(g.id).length+' products</div></td>'+cells.map(miniCell).join('')+'</tr>'});
+  h+='</tbody></table></div></div>';
+  // due list
+  const today=todayStr();
+  const dueItems=S.tasks.filter(t=>t.due&&!taskDone(t)).map(t=>{const ta=tally(taskPairs(t));return {due:t.due,name:t.name,dept:(depts().find(x=>x.id===t.dept)||{}).name||'',owner:t.owner,right:ta.done+'/'+ta.total}})
+    .concat(S.videos.filter(v=>v.due&&v.status!=='done').map(v=>({due:v.due,name:(v.code?v.code+' ':'')+v.name,dept:'Video',owner:v.owner,right:STATUS.find(x=>x.k===(v.status||'ns')).label})));
+  const due=dueItems.sort((a,b)=>a.due.localeCompare(b.due)).slice(0,10);
+  h+='<div class="card"><h2 class="sec">Next due</h2>';
+  if(!due.length)h+='<div class="muted">No open deliverables have a target date yet. Add one by clicking any deliverable or video name.</div>';
+  else{h+='<div class="due-list">'+due.map(t=>'<div class="due-row"><span class="due-d'+(t.due<today?' late':'')+'">'+esc(fmtDate(t.due))+'</span><div class="t"><div><b>'+esc(t.name)+'</b></div><div class="muted" style="font-size:12px">'+esc(t.dept)+(t.owner?' · '+esc(t.owner):'')+'</div></div><span class="mono">'+esc(t.right)+'</span></div>').join('')+'</div>'}
+  h+='</div></section>';
+  // lineup
+  h+='<section><div class="toolbar" style="margin-bottom:10px"><h2 class="sec" style="margin:0">Lineup</h2><span class="sp"></span>'+(S.canWrite?'<button class="btn small" data-act="addGroup">Add group</button>':'')+'</div><div class="lineup">';
+  groupsSorted().forEach(g=>{
+    h+='<div class="lgroup"><div class="gh"><b>'+esc(g.name)+'</b>'+(S.canWrite?'<button class="linkbtn" data-act="editGroup" data-id="'+esc(g.id)+'">Edit</button>':'')+'</div>';
+    productsOf(g.id).forEach(p=>{h+='<button class="prod" data-act="editProduct" data-id="'+esc(p.id)+'"><span class="pn">'+esc(p.name)+'</span><span class="sk"><span class="mono">SKU '+esc(p.sku||'TBD')+'</span><span class="mono '+(p.factorySku?'muted':'fsku-missing')+'">Factory '+esc(p.factorySku||'needed')+'</span><span class="mono '+(p.driveLink?'muted':'fsku-missing')+'">'+(p.driveLink?'Folder linked':'Folder needed')+'</span></span></button>'});
+    if(S.canWrite)h+='<div class="addrow"><button class="linkbtn" data-act="addProduct" data-group="'+esc(g.id)+'">Add product</button></div>';
+    h+='</div>'});
+  h+='</div></section>';
+  main.innerHTML=h;
+}
+function kpi(l,v,s){return '<div class="kpi"><div class="lbl">'+esc(l)+'</div><div class="val">'+esc(v)+'</div><div class="sub">'+esc(s)+'</div></div>'}
+function miniCell(t){if(!t.total)return '<td class="n muted">n/a</td>';return '<td class="n"><div class="mini"><b>'+pct(t)+'%</b>'+barHtml(t)+'</div></td>'}
+
+function renderDept(main,did){
+  const dp=depts().find(d=>d.id===did);
+  if(isVid(dp)){renderVideos(main,dp);return}
+  const gs=groupsSorted().filter(g=>productsOf(g.id).length);
+  const ps=productsSorted();
+  const ncols=ps.length;
+  const today=todayStr();
+  const allT=tally(deptTasks(did).flatMap(taskPairs));
+  let h='<section class="toolbar"><div class="dsum"><b>'+esc(dp.name)+'</b>'+barHtml(allT)+'<span class="mono">'+pct(allT)+'% · '+allT.done+'/'+allT.total+'</span></div><span class="sp"></span>';
+  h+='<label for="ownerSel">Owner <select id="ownerSel"><option value="">Everyone</option>'+owners().map(o=>'<option'+(o===S.owner?' selected':'')+'>'+esc(o)+'</option>').join('')+'</select></label>';
+  h+='<label><input type="checkbox" id="openOnly"'+(S.openOnly?' checked':'')+'> Hide finished</label>';
+  if(S.canWrite)h+='<button class="btn primary small" data-act="addTask" data-section="">Add deliverable</button>';
+  h+='</section>';
+  h+='<div class="mx-wrap"><table class="mx"><thead><tr><th class="c-task hl" rowspan="3">Deliverable</th><th class="c-own hl" rowspan="3">Owner</th><th class="c-due hl" rowspan="3">Target</th>';
+  gs.forEach(g=>h+='<th class="g" colspan="'+productsOf(g.id).length+'">'+(S.canWrite?'<button data-act="editGroup" data-id="'+esc(g.id)+'">'+esc(g.name)+'</button>':esc(g.name))+'</th>');
+  h+='</tr><tr>';
+  ps.forEach(p=>h+='<th class="p" title="'+esc(p.name)+'"><button data-act="editProduct" data-id="'+esc(p.id)+'">'+esc(p.short||p.name)+'</button></th>');
+  h+='</tr><tr>';
+  ps.forEach(p=>h+='<th class="s"><span class="mono">'+esc(p.sku||'SKU TBD')+'</span><span class="mono f'+(p.factorySku?'':' fsku-missing')+'">'+esc(p.factorySku?('F: '+p.factorySku):'Factory SKU needed')+'</span></th>');
+  h+='</tr></thead><tbody>';
+  const secs=sections(did);let shown=0;
+  secs.forEach((tasks,sec)=>{
+    const vis=tasks.filter(t=>(!S.owner||(t.owner||'').trim()===S.owner)&&(!S.openOnly||!taskDone(t)));
+    if(!vis.length)return;
+    h+='<tr class="secrow"><td class="c-task">'+esc(sec)+'</td><td colspan="'+(ncols+2)+'"></td></tr>';
+    vis.forEach(t=>{shown++;
+      const late=t.due&&t.due<today&&!taskDone(t);
+      h+='<tr><td class="c-task"><button class="taskbtn" data-act="editTask" data-id="'+esc(t.id)+'"><span class="tn">'+esc(t.name)+'</span>'+(t.scope!=='product'?'<span class="scope">'+esc(SCOPE_LABEL[t.scope])+'</span>':'')+(t.note?'<span class="tnote">'+esc(t.note)+'</span>':'')+'</button></td>';
+      h+='<td class="meta c-own">'+esc(t.owner||'')+'</td><td class="meta c-due'+(late?' late':'')+'">'+esc(fmtDate(t.due))+'</td>';
+      if(t.scope==='family'){h+='<td colspan="'+ncols+'">'+cellBtn(t,'all','All '+ncols+' products')+'</td>'}
+      else if(t.scope==='group'){gs.forEach(g=>{const n=productsOf(g.id).length;h+=applies(t,g.id)?'<td colspan="'+n+'">'+cellBtn(t,g.id,n>1?n+' products':'')+'</td>':'<td class="na" colspan="'+n+'" aria-label="Not applicable"></td>'})}
+      else{ps.forEach(p=>{h+=applies(t,p.group)?'<td>'+cellBtn(t,p.id,'')+'</td>':'<td class="na" aria-label="Not applicable"></td>'})}
+      h+='</tr>'});
+  });
+  if(!shown)h+='<tr><td class="c-task"></td><td colspan="'+(ncols+2)+'"><div class="empty">'+(deptTasks(did).length?'Nothing matches these filters.':'No deliverables in this department yet.')+'</div></td></tr>';
+  h+='</tbody></table></div>';
+  main.innerHTML=h;
+}
+function folderFor(target){
+  const p=S.products.find(x=>x.id===target);if(p)return p.driveLink||'';
+  const g=S.groups.find(x=>x.id===target);if(g)return g.driveLink||'';
+  return (S.launch&&S.launch.driveLink)||'';
+}
+function linkFor(tid,target){const c=S.cells.get(cellId(tid,target));return ((c&&c.link)||'').trim()||folderFor(target)}
+function deptHasLinks(did){const d=depts().find(x=>x.id===did);return !!(d&&d.links)}
+const EXT='<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M7 1h4v4M11 1 5.5 6.5M9.5 7v3.5h-8.5v-8.5H5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+function cellBtn(t,target,span){
+  const st=status(t.id,target);const c=S.cells.get(cellId(t.id,target));const has=c&&(c.notes||'').trim();
+  const lbl=STATUS.find(s=>s.k===st).label;
+  const btn='<button class="cell '+st+'" data-act="cell" data-task="'+esc(t.id)+'" data-target="'+esc(target)+'" title="'+esc(lbl)+(has?' · has notes':'')+'">'+esc(lbl)+(span?' <span class="span">· '+esc(span)+'</span>':'')+(has?'<span class="dot" aria-label="has notes"></span>':'')+'</button>';
+  if(!deptHasLinks(t.dept))return btn;
+  const href=linkFor(t.id,target);
+  const v=href?'<a class="vlink '+st+'" href="'+esc(href)+'" target="_blank" rel="noopener" title="View files" aria-label="View files for '+esc(t.name)+'">View'+EXT+'</a>':'<span class="vlink none '+st+'" title="No folder link yet">No link</span>';
+  return '<div class="cellwrap">'+btn+v+'</div>';
+}
+
+/* ---------- videos ---------- */
+const STAGE_NA={k:'na',label:'N/A'};
+const V_SECTIONS=['Launch Videos','Evergreen'];
+function videosByOrder(){return [...S.videos].sort((a,b)=>V_SECTIONS.indexOf(a.section||'Launch Videos')-V_SECTIONS.indexOf(b.section||'Launch Videos')||(a.order||0)-(b.order||0))}
+function coverChips(v){
+  const ids=Array.isArray(v.products)?v.products:[];
+  if(!ids.length)return ['Whole collection'];
+  const out=[];
+  groupsSorted().forEach(g=>{const ps=productsOf(g.id);const inG=ps.filter(p=>ids.includes(p.id));if(!inG.length)return;
+    if(inG.length===ps.length&&ps.length>1)out.push(g.name+' ('+ps.length+')');else inG.forEach(p=>out.push(p.short||p.name))});
+  return out;
+}
+function videoLink(v){
+  if(v.link)return v.link;
+  if((v.section||'')==='Evergreen'){const f=S.folders.find(x=>x.id==='videos');if(f&&f.link)return f.link}
+  return (S.launch&&S.launch.driveLink)||'';
+}
+function stageSel(v,f,allowNA){
+  const val=v[f]||'ns';const opts=STATUS.concat(allowNA?[STAGE_NA]:[]);
+  const lbl=(opts.find(o=>o.k===val)||STATUS[0]).label;
+  if(!S.canWrite)return '<span class="pill '+val+'">'+esc(lbl)+'</span>';
+  return '<select class="pill '+val+'" data-vid="'+esc(v.id)+'" data-vf="'+f+'" aria-label="'+esc(f)+'">'+opts.map(o=>'<option value="'+o.k+'"'+(o.k===val?' selected':'')+'>'+o.label+'</option>').join('')+'</select>';
+}
+function renderVideos(main,dp){
+  const vids=videosByOrder();const today=todayStr();
+  const T=vTally(vids);
+  const sc=vids.filter(v=>(v.script||'ns')!=='na'),ed=vids,th=vids.filter(v=>!v.thumbNA);
+  const cnt=(arr,f,ok)=>arr.filter(v=>ok(v[f])).length;
+  let h='<section class="toolbar"><div class="dsum"><b>'+esc(dp.name)+'</b>'+barHtml(T)+'<span class="mono">'+pct(T)+'% · '+T.done+'/'+T.total+' videos</span></div><span class="sp"></span>'+(S.canWrite?'<button class="btn primary small" data-act="addVideo">Add video</button>':'')+'</section>';
+  h+='<section class="kpis">'+kpi('Scripts / outlines',cnt(sc,'script',x=>x==='done')+' / '+sc.length,'completed')+kpi('Filming / editing',cnt(ed,'edit',x=>x==='done')+' / '+ed.length,'completed')+kpi('Thumbnails',cnt(th,'thumb',x=>!!x)+' / '+th.length,'done')+kpi('Videos completed',T.done+' / '+T.total,T.ip+' in progress')+'</section>';
+  if(!vids.length){main.innerHTML=h+'<div class="banner"><strong>No videos yet.</strong> Add the first one with Add video.</div>';return}
+  h+='<div class="vid-wrap"><table class="vid"><thead><tr><th>Code</th><th>Video</th><th>Covers</th><th>Script / Outline</th><th>Filming / Editing</th><th>Thumbnail</th><th>Status</th><th>Owner</th><th>Target</th><th>Files</th></tr></thead><tbody>';
+  V_SECTIONS.forEach(sec=>{
+    const rows=vids.filter(v=>(v.section||'Launch Videos')===sec);if(!rows.length)return;
+    h+='<tr class="vsec"><td colspan="10"><b>'+esc(sec)+'</b> <span class="muted">'+rows.length+'</span>'+(sec==='Evergreen'?' <span class="muted vs-note">Lives in the general Videos folder</span>':'')+'</td></tr>';
+    rows.forEach(v=>{
+      const late=v.due&&v.due<today&&v.status!=='done';const link=videoLink(v);
+      const lk=(t,c)=>link?'<a class="'+c+'" href="'+esc(link)+'" target="_blank" rel="noopener" title="Open video folder">'+t+'</a>':t;
+      h+='<tr><td class="mono vcode">'+lk(esc(v.code||''),'vlinkt')+'</td>';
+      h+='<td class="vname"><div class="vn-row"><span class="tn">'+lk(esc(v.name),'vlinkt')+'</span>'+(S.canWrite?'<button class="linkbtn vedit" data-act="editVideo" data-id="'+esc(v.id)+'">Edit</button>':'')+'</div>'+(v.notes?'<span class="tnote">'+esc(v.notes)+'</span>':'')+'</td>';
+      h+='<td><div class="chips">'+coverChips(v).map(c=>'<span class="chip">'+esc(c)+'</span>').join('')+'</div></td>';
+      h+='<td>'+stageSel(v,'script',true)+'</td><td>'+stageSel(v,'edit',false)+'</td>';
+      h+='<td>'+(v.thumbNA?'<span class="muted">N/A</span>':'<label class="thumb"><input type="checkbox" data-vid="'+esc(v.id)+'" data-vf="thumb"'+(v.thumb?' checked':'')+(S.canWrite?'':' disabled')+'> '+(v.thumb?'Done':'To do')+'</label>')+'</td>';
+      h+='<td>'+stageSel(v,'status',false)+'</td>';
+      h+='<td class="meta">'+esc(v.owner||'')+'</td><td class="meta'+(late?' late':'')+'">'+esc(fmtDate(v.due))+'</td>';
+      h+='<td>'+(link?'<a class="fopen" href="'+esc(link)+'" target="_blank" rel="noopener">Open'+EXT+'</a>':'<span class="fneed">Link needed</span>')+'</td></tr>';
+    });
+  });
+  h+='</tbody></table></div><p class="muted" style="margin:0;font-size:12px">Each launch video folder holds the script or outline, the final export and the thumbnail. Click a code or name to open its folder. Use Edit to change its products, owner, target date or folder.</p>';
+  main.innerHTML=h;
+}
+function openVideo(vid){
+  const isNew=!vid;const v=isNew?{code:'',name:'',section:'Launch Videos',products:[],link:'',owner:'',due:'',notes:'',thumbNA:false}:S.videos.find(x=>x.id===vid);
+  const ids=Array.isArray(v.products)?v.products:[];
+  let h='<div><h3>'+(isNew?'New video':'Edit video')+'</h3></div>';
+  h+='<div class="row2"><label class="fld"><span>Code</span><input id="v-code" class="mono" value="'+esc(v.code||'')+'"></label><label class="fld"><span>Section</span><select id="v-sec">'+V_SECTIONS.map(s=>'<option'+(s===(v.section||'Launch Videos')?' selected':'')+'>'+s+'</option>').join('')+'</select></label></div>';
+  h+='<label class="fld"><span>Video name</span><input id="v-name" autofocus value="'+esc(v.name)+'"></label>';
+  h+='<div class="fld"><span>Covers</span><label class="checks"><label><input type="checkbox" id="v-all"'+(ids.length?'':' checked')+'> Whole collection</label></label>';
+  groupsSorted().forEach(g=>{h+='<div class="vgrp"><div class="muted" style="font-size:12px">'+esc(g.name)+'</div><div class="checks">'+productsOf(g.id).map(p=>'<label><input type="checkbox" class="v-p" value="'+esc(p.id)+'"'+(ids.includes(p.id)?' checked':'')+'> '+esc(p.short||p.name)+'</label>').join('')+'</div></div>'});
+  h+='</div>';
+  h+='<label class="fld"><span>Video folder</span><input id="v-link" type="url" placeholder="https://drive.google.com/drive/folders/..." value="'+esc(v.link||'')+'"></label>';
+  h+='<div class="row2"><label class="fld"><span>Owner</span><input id="v-owner" list="vOwn" value="'+esc(v.owner||'')+'"><datalist id="vOwn">'+[...new Set(owners().concat(S.videos.map(x=>(x.owner||'').trim()).filter(Boolean)))].map(o=>'<option value="'+esc(o)+'">').join('')+'</datalist></label><label class="fld"><span>Target date</span><input id="v-due" type="date" value="'+esc(v.due||'')+'"></label></div>';
+  h+='<label class="fld"><span>Notes</span><input id="v-notes" value="'+esc(v.notes||'')+'"></label>';
+  h+='<label class="checks"><label><input type="checkbox" id="v-thumbna"'+(v.thumbNA?' checked':'')+'> No thumbnail needed</label></label>';
+  h+='<div class="actions">'+(!isNew?'<button class="btn danger l" data-act="delVideo">Delete</button>':'')+'<button class="btn" data-act="close">Cancel</button><button class="btn primary" data-act="saveVideo">'+(isNew?'Add video':'Save')+'</button></div>';
+  openModal(h,'video',{vid});
+}
+
+/* ---------- specs ---------- */
+function specSections(){
+  const m=new Map();
+  [...S.specs].sort((a,b)=>(a.sectionOrder||0)-(b.sectionOrder||0)||(a.order||0)-(b.order||0)).forEach(r=>{const k=r.section||'Other';if(!m.has(k))m.set(k,{order:r.sectionOrder||0,rows:[]});m.get(k).rows.push(r)});
+  return m;
+}
+const FEAT_CATS=[{id:'cm',name:'Clamshell Manual'},{id:'ca',name:'Clamshell Auto Open'},{id:'sw',name:'Swing'},{id:'mug',name:'Mug Press'},{id:'acc',name:'Accessories'}];
+function featChips(a){
+  a=Array.isArray(a)?a:[];const has=k=>a.includes(k);
+  if(['cm','ca','sw','mug'].every(has)){const o=['All presses'];if(has('acc'))o.push('Accessories');return o}
+  const o=[];
+  if(has('cm')&&has('ca')){o.push('Clamshells')}else{if(has('cm'))o.push('Clamshell Manual');if(has('ca'))o.push('Clamshell Auto Open')}
+  if(has('sw'))o.push('Swing');if(has('mug'))o.push('Mug Press');if(has('acc'))o.push('Accessories');
+  return o;
+}
+const FEAT_SECS=[{id:'clam',name:'Clamshell',keys:['cm','ca']},{id:'swing',name:'Swing',keys:['sw']},{id:'mug',name:'Mug & Tumbler',keys:['mug']},{id:'acc',name:'Accessories',keys:['acc']}];
+function featuresHtml(){
+  const f=S.featFilter||'';
+  const all=[...S.features].sort((a,b)=>(a.order||0)-(b.order||0));
+  let h='<section class="feat"><div class="files-hd"><div><div class="eyebrow">Gen 1 vs Gen 2</div><h2 class="sec" style="margin:0">What\'s new in Gen 2</h2></div><div class="files-act">';
+  h+='<label class="muted" for="featSel" style="font-size:13px">Show</label><select id="featSel" class="fsel"><option value="">All sections</option>'+FEAT_SECS.map(c=>'<option value="'+c.id+'"'+(c.id===f?' selected':'')+'>'+c.name+'</option>').join('')+'</select>';
+  if(S.canWrite)h+='<button class="btn primary small" data-act="addFeat">Add feature</button>';
+  h+='</div></div>';
+  if(!all.length)return h+'<div class="muted fempty">No features listed yet.</div></section>';
+  h+='<div class="vid-wrap"><table class="vid feat-t"><thead><tr><th>Feature</th><th>Gen 1</th><th>Gen 2</th><th>Listing notes</th><th>Also on</th><th>Source</th></tr></thead><tbody>';
+  FEAT_SECS.filter(sec=>!f||sec.id===f).forEach(sec=>{
+    const rows=all.filter(x=>(x.applies||[]).some(k=>sec.keys.includes(k)));
+    h+='<tr class="vsec"><td colspan="6"><b>'+esc(sec.name)+'</b> <span class="muted">'+rows.length+'</span></td></tr>';
+    if(!rows.length){h+='<tr><td colspan="6" class="muted">No features listed for this section yet.</td></tr>';return}
+    rows.forEach(x=>{
+      const a=x.applies||[];
+      let only='';if(sec.id==='clam'){if(a.includes('ca')&&!a.includes('cm'))only='Auto Open only';else if(a.includes('cm')&&!a.includes('ca'))only='Manual only'}
+      const also=FEAT_SECS.filter(o=>o.id!==sec.id&&a.some(k=>o.keys.includes(k))).map(o=>o.name);
+      h+='<tr><td class="fname-c">'+(S.canWrite?'<button class="taskbtn" data-act="editFeat" data-id="'+esc(x.id)+'"><span class="tn">'+esc(x.name)+'</span></button>':'<span class="tn">'+esc(x.name)+'</span>')+(only?'<span class="chip only">'+only+'</span>':'')+'</td>';
+      h+='<td class="muted">'+esc(x.before||'')+'</td><td><b>'+esc(x.after||'')+'</b></td>';
+      h+='<td class="fnotes">'+esc(x.notes||'')+(x.verify?'<div class="fverify">To confirm: '+esc(x.verify)+'</div>':'')+'</td>';
+      h+='<td><div class="chips">'+also.map(c=>'<span class="chip">'+esc(c)+'</span>').join('')+'</div></td>';
+      h+='<td class="muted" style="font-size:12px;white-space:nowrap">'+esc(x.source||'')+'</td></tr>';
+    });
+  });
+  return h+'</tbody></table></div></section>';
+}
+function openFeat(id){
+  const isNew=!id;const x=isNew?{name:'',before:'',after:'',notes:'',verify:'',source:'',applies:[]}:S.features.find(y=>y.id===id);
+  const a=Array.isArray(x.applies)?x.applies:[];
+  let h='<div><h3>'+(isNew?'New feature':'Edit feature')+'</h3></div>';
+  h+='<label class="fld"><span>Feature</span><input id="ft-name" autofocus value="'+esc(x.name)+'"></label>';
+  h+='<div class="row2"><label class="fld"><span>Gen 1</span><input id="ft-before" value="'+esc(x.before||'')+'"></label><label class="fld"><span>Gen 2</span><input id="ft-after" value="'+esc(x.after||'')+'"></label></div>';
+  h+='<div class="fld"><span>Applies to</span><div class="checks">'+FEAT_CATS.map(c=>'<label><input type="checkbox" class="ft-a" value="'+c.id+'"'+(a.includes(c.id)?' checked':'')+'> '+c.name+'</label>').join('')+'</div></div>';
+  h+='<label class="fld"><span>Listing notes</span><textarea id="ft-notes">'+esc(x.notes||'')+'</textarea></label>';
+  h+='<div class="row2"><label class="fld"><span>Still to confirm</span><input id="ft-verify" value="'+esc(x.verify||'')+'"></label><label class="fld"><span>Source</span><input id="ft-src" value="'+esc(x.source||'')+'"></label></div>';
+  h+='<div class="actions">'+(!isNew?'<button class="btn danger l" data-act="delFeat">Delete</button>':'')+'<button class="btn" data-act="close">Cancel</button><button class="btn primary" data-act="saveFeat">Save</button></div>';
+  openModal(h,'feat',{id});
+}
+function renderSpecs(main){
+  const gs=groupsSorted().filter(g=>productsOf(g.id).length);const ps=productsSorted();
+  const vals=S.specs.reduce((n,r)=>n+ps.filter(p=>((r.values||{})[p.id]||'').trim()).length,0);
+  let h='<section class="toolbar"><div class="dsum"><b>Machine Specs</b><span class="mono">'+vals+' values filled</span></div><span class="sp"></span><span class="muted" style="font-size:12px">Edits save when you leave a field</span></section>';
+  if(!S.specs.length){main.innerHTML=h+'<div class="banner"><strong>No spec rows yet.</strong></div>';return}
+  h+='<div class="spec-wrap"><table class="spec"><thead><tr><th class="sl" rowspan="2">Spec</th>';
+  gs.forEach(g=>h+='<th class="g" colspan="'+productsOf(g.id).length+'">'+esc(g.name)+'</th>');
+  h+='</tr><tr>';
+  ps.forEach(p=>h+='<th class="p" title="'+esc(p.name)+'">'+esc(p.short||p.name)+'<span class="mono">'+esc(p.sku||'')+'</span></th>');
+  h+='</tr></thead><tbody>';
+  specSections().forEach((sec,name)=>{
+    h+='<tr class="ssec"><td class="sl"><b>'+esc(name)+'</b>'+(S.canWrite?' <button class="linkbtn" data-act="addSpec" data-section="'+esc(name)+'" data-so="'+sec.order+'">Add row</button>':'')+'</td><td colspan="'+ps.length+'"></td></tr>';
+    sec.rows.forEach(r=>{
+      h+='<tr><td class="sl">'+(S.canWrite?'<div class="slrow"><input class="si lbl" data-spec="'+esc(r.id)+'" data-f="label" value="'+esc(r.label||'')+'" aria-label="Spec name"><button class="del" data-act="delSpec" data-id="'+esc(r.id)+'" aria-label="Delete row" title="Delete row">&times;</button></div>':'<span class="ro">'+esc(r.label)+'</span>')+(r.hint?'<div class="shint">'+esc(r.hint)+'</div>':'')+'</td>';
+      ps.forEach(p=>{const v=(r.values||{})[p.id]||'';h+='<td>'+(S.canWrite?'<input class="si" data-spec="'+esc(r.id)+'" data-p="'+esc(p.id)+'" value="'+esc(v)+'" aria-label="'+esc(r.label+' for '+(p.short||p.name))+'">':'<span class="ro">'+esc(v)+'</span>')+'</td>'});
+      h+='</tr>'});
+  });
+  h+='</tbody></table></div>';
+  h+=featuresHtml();
+  main.innerHTML=h;
+}
+async function saveSpecField(el){
+  const r=S.specs.find(x=>x.id===el.dataset.spec);if(!r)return;const v=el.value.trim();
+  if(el.dataset.f==='label'){if(v===(r.label||'')||!v)return;await write(()=>D('/specs/'+r.id).update({label:v}));return}
+  const pid=el.dataset.p;if(((r.values||{})[pid]||'')===v)return;
+  await write(()=>D('/specs/'+r.id).update({values:{[pid]:v}}));
+}
+
+/* ---------- reference ---------- */
+const SITE_STATUSES=['Live / Co-Exist','Live / Replace','Pre-Order','Pre-Order / Replace','Hidden','Not Launching'];
+function refVal(r,f){
+  if((f==='sku'||f==='factorySku')&&r.productId){const p=S.products.find(x=>x.id===r.productId);if(p)return p[f]||''}
+  return r[f]==null?'':String(r[f]);
+}
+function refSections(){
+  const m=new Map();
+  [...S.refs].sort((a,b)=>(a.sectionOrder||0)-(b.sectionOrder||0)||(a.order||0)-(b.order||0)).forEach(r=>{const s=r.section||'Other';if(!m.has(s))m.set(s,{order:r.sectionOrder||0,rows:[]});m.get(s).rows.push(r)});
+  return m;
+}
+function siteCls(v){v=(v||'').toLowerCase();if(v.startsWith('live'))return 'st-live';if(v.startsWith('pre'))return 'st-pre';return v?'st-other':''}
+function refCell(r,f,cls){
+  const v=refVal(r,f);
+  const extra=(f==='factorySku'&&!v?' miss':'')+(f==='siteStatus'?' '+siteCls(v):'');
+  if(!S.canWrite)return '<td class="'+(cls||'')+extra+'"><span class="ro">'+esc(v)+'</span></td>';
+  const list=f==='siteStatus'?' list="siteList"':'';
+  return '<td class="'+(cls||'')+extra+'"><input class="ri" data-ref="'+esc(r.id)+'" data-f="'+f+'" value="'+esc(v)+'"'+list+' aria-label="'+esc(f)+'"'+(f==='factorySku'&&!v?' placeholder="Needed"':'')+'></td>';
+}
+function productFolders(){
+  const m=new Map();
+  productsSorted().forEach(p=>{if(!p.driveLink)return;if(!m.has(p.driveLink))m.set(p.driveLink,[]);m.get(p.driveLink).push(p)});
+  return [...m.entries()].map(([link,ps])=>{
+    const gids=[...new Set(ps.map(p=>p.group))];
+    let label;
+    if(gids.length===1&&productsOf(gids[0]).length===ps.length&&ps.length>1){label=(S.groups.find(g=>g.id===gids[0])||{}).name||''}
+    else label=ps.map(p=>p.short||p.name).join(' & ');
+    return {link,label,sub:ps.map(p=>p.sku).filter(Boolean).join(', ')};
+  });
+}
+function folderRow(name,sub,link,act,id){
+  return '<div class="frow"><div class="fmeta"><div class="fname">'+esc(name)+'</div>'+(sub?'<div class="fsub">'+esc(sub)+'</div>':'')+'</div>'+
+    (link?'<a class="fopen" href="'+esc(link)+'" target="_blank" rel="noopener">Open'+EXT+'</a>':'<span class="fneed">Link needed</span>')+
+    (act&&S.canWrite?'<button class="linkbtn fedit" data-act="'+act+'" data-id="'+esc(id||'')+'">Edit</button>':'')+'</div>';
+}
+function shipSort(x){return x.date||x.sortDate||'9999-12-31'}
+function shipWhen(x){return x.dateText||(x.date?fmtDate(x.date):'TBD')}
+function shipCls(st){st=(st||'').toLowerCase();if(/arriv|deliver|receiv/.test(st))return 'done';if(/ship|transit/.test(st))return 'ip';return 'ns'}
+function shipsOf(kind){return S.ships.filter(x=>x.kind===kind).sort((a,b)=>shipSort(a).localeCompare(shipSort(b))||(a.order||0)-(b.order||0))}
+function refDateCell(r){
+  const st=S.ships.find(x=>x.kind==='stock'&&Array.isArray(x.refs)&&x.refs.includes(r.id));
+  const un=S.ships.find(x=>x.kind==='unit'&&Array.isArray(x.refs)&&x.refs.includes(r.id));
+  const L=S.launch||{};const late=st&&L.launchDate&&shipSort(st)>L.launchDate;
+  return '<td class="dts"><div><span class="dl">Stock</span>'+(st?esc(shipWhen(st))+' <span class="dot-'+shipCls(st.status)+'">'+esc(st.status||'')+'</span>'+(late?' <span class="after">after launch</span>':''):'<span class="muted">None</span>')+'</div>'+
+    '<div><span class="dl">Unit</span>'+(un?'<span class="dot-'+shipCls(un.status)+'">'+esc(un.status||'')+'</span> '+esc(shipWhen(un)):'<span class="muted">No unit</span>')+'</div></td>';
+}
+function shipRow(x){
+  return '<div class="frow"><div class="fmeta"><div class="fname">'+esc(x.label)+'</div>'+(x.items?'<div class="fsub">'+esc(x.items)+'</div>':'')+'</div>'+
+    '<div class="sh-when"><span class="pill '+shipCls(x.status)+'">'+esc(x.status||'Unknown')+'</span><span class="mono">'+esc(shipWhen(x))+'</span></div>'+
+    (x.tracking?'<a class="fopen" href="'+esc(x.tracking)+'" target="_blank" rel="noopener">Track'+EXT+'</a>':'')+
+    (S.canWrite?'<button class="linkbtn fedit" data-act="editShip" data-id="'+esc(x.id)+'">Edit</button>':'')+'</div>';
+}
+function datesHtml(){
+  const L=S.launch||{};const today=todayStr();
+  const ev=S.ships.map(x=>({sort:shipSort(x),when:shipWhen(x),title:x.label,k:x.kind==='stock'?'Incoming stock':'Marketing units',status:x.status,cls:shipCls(x.status),after:x.kind==='stock'&&L.launchDate&&shipSort(x)>L.launchDate,real:!!x.date}));
+  if(L.launchDate)ev.push({sort:L.launchDate,when:fmtDate(L.launchDate),title:(L.name||'')+' launch',k:'Launch day',launch:true,real:true});
+  ev.sort((a,b)=>a.sort.localeCompare(b.sort));
+  let h='<section class="files"><div class="files-hd"><div><div class="eyebrow">Key dates</div><h2 class="sec" style="margin:0">Incoming stock and marketing units</h2></div><div class="files-act">'+(S.canWrite?'<button class="btn" data-act="addShip" data-kind="stock">Add stock shipment</button><button class="btn" data-act="addShip" data-kind="unit">Add marketing unit</button>':'')+'</div></div>';
+  if(ev.length){h+='<div class="tl-wrap"><ol class="tl">'+ev.map(e=>'<li class="tl-i'+(e.launch?' launch':'')+(e.real&&e.sort<today?' past':'')+'"><div class="tl-d">'+esc(e.when)+'</div><div class="tl-k">'+esc(e.k)+'</div><div class="tl-t">'+esc(e.title)+'</div>'+(e.launch?'':'<span class="pill '+e.cls+'">'+esc(e.status||'Unknown')+'</span>')+(e.after?'<div class="after">After launch: pre-order</div>':'')+'</li>').join('')+'</ol></div>'}
+  h+='<div class="files-grid"><div><div class="fcol-hd"><b>Incoming stock</b></div>'+(shipsOf('stock').map(shipRow).join('')||'<div class="muted fempty">No stock shipments yet.</div>')+'</div>';
+  h+='<div><div class="fcol-hd"><b>Marketing units</b><span class="muted" style="font-size:12px">Air shipped for content</span></div>'+(shipsOf('unit').map(shipRow).join('')||'<div class="muted fempty">No marketing units yet.</div>')+'</div></div></section>';
+  return h;
+}
+function openShip(id,kind){
+  const isNew=!id;const x=isNew?{kind,label:'',items:'',status:'',date:'',dateText:'',tracking:'',refs:[]}:S.ships.find(y=>y.id===id);
+  const refs=Array.isArray(x.refs)?x.refs:[];
+  let h='<div><h3>'+(isNew?(kind==='stock'?'New stock shipment':'New marketing unit shipment'):'Edit shipment')+'</h3></div>';
+  h+='<div class="row2"><label class="fld"><span>Type</span><select id="s-kind"><option value="stock"'+(x.kind==='stock'?' selected':'')+'>Incoming stock</option><option value="unit"'+(x.kind==='unit'?' selected':'')+'>Marketing units</option></select></label><label class="fld"><span>Status</span><input id="s-status" list="shipSt" value="'+esc(x.status||'')+'"><datalist id="shipSt">'+['Not Shipped','Ships Soon','Shipped','In Transit','Arrived','Delivered','Unknown'].map(o=>'<option value="'+o+'">').join('')+'</datalist></label></div>';
+  h+='<label class="fld"><span>Name</span><input id="s-label" autofocus value="'+esc(x.label)+'"></label>';
+  h+='<label class="fld"><span>What is included</span><input id="s-items" value="'+esc(x.items||'')+'"></label>';
+  h+='<div class="row2"><label class="fld"><span>Date (arrival, ETA or ship date)</span><input id="s-date" type="date" value="'+esc(x.date||'')+'"></label><label class="fld"><span>Or a rough date</span><input id="s-dtext" placeholder="End of November" value="'+esc(x.dateText||'')+'"></label></div>';
+  h+='<label class="fld"><span>Tracking link</span><input id="s-track" type="url" value="'+esc(x.tracking||'')+'"></label>';
+  h+='<div class="fld"><span>Products in this shipment</span>';
+  refSections().forEach((sec,name)=>{h+='<div class="vgrp"><div class="muted" style="font-size:12px">'+esc(name)+'</div><div class="checks">'+sec.rows.map(r=>{const p=r.productId&&S.products.find(q=>q.id===r.productId);const lbl=(p&&p.short&&name!=='Accessories'?p.short+' '+(S.groups.find(g=>g.id===p.group)||{}).name:'')||r.title||r.gen1Title;return '<label><input type="checkbox" class="s-r" value="'+esc(r.id)+'"'+(refs.includes(r.id)?' checked':'')+'> '+esc(lbl)+'</label>'}).join('')+'</div></div>'});
+  h+='</div><div class="actions">'+(!isNew?'<button class="btn danger l" data-act="delShip">Delete</button>':'')+'<button class="btn" data-act="close">Cancel</button><button class="btn primary" data-act="saveShip">Save</button></div>';
+  openModal(h,'ship',{id});
+}
+function filesHtml(){
+  const L=S.launch||{};
+  const fl=[...S.folders].sort(byOrder);
+  let h='<section class="files"><div class="files-hd"><div><div class="eyebrow">File locations</div><h2 class="sec" style="margin:0">'+esc(L.drivePath||'Marketing shared drive / GEN 2')+'</h2></div><div class="files-act">'+
+    (L.driveLink?'<a class="btn primary" href="'+esc(L.driveLink)+'" target="_blank" rel="noopener">Open GEN 2 folder '+EXT+'</a>':'<span class="fneed">Main folder link needed</span>')+
+    (S.canWrite?'<button class="btn" data-act="editLaunch">Edit</button>':'')+'</div></div>';
+  h+='<div class="files-grid"><div><div class="fcol-hd"><b>Working folders</b>'+(S.canWrite?'<button class="linkbtn" data-act="addFolder">Add folder</button>':'')+'</div>';
+  h+=fl.length?fl.map(f=>folderRow(f.name,f.note,f.link,'editFolder',f.id)).join(''):'<div class="muted fempty">No working folders listed yet.</div>';
+  h+='</div><div><div class="fcol-hd"><b>Product folders</b><span class="muted" style="font-size:12px">Photo and video assets</span></div>';
+  const pf=productFolders();
+  h+=pf.length?pf.map(f=>folderRow(f.label,f.sub,f.link)).join(''):'<div class="muted fempty">Add a folder link to a product to list it here.</div>';
+  h+='</div></div></section>';
+  return h;
+}
+function openFolder(fid){
+  const isNew=!fid;const f=isNew?{name:'',note:'',link:''}:S.folders.find(x=>x.id===fid);
+  let h='<div><h3>'+(isNew?'New folder':'Edit folder')+'</h3></div>';
+  h+='<label class="fld"><span>Name</span><input id="f-name" autofocus value="'+esc(f.name)+'"></label>';
+  h+='<label class="fld"><span>What goes here</span><input id="f-note" value="'+esc(f.note||'')+'"></label>';
+  h+='<label class="fld"><span>Google Drive link</span><input id="f-link" type="url" placeholder="https://drive.google.com/drive/folders/..." value="'+esc(f.link||'')+'"></label>';
+  h+='<div class="actions">'+(!isNew?'<button class="btn danger l" data-act="delFolder">Delete</button>':'')+'<button class="btn" data-act="close">Cancel</button><button class="btn primary" data-act="saveFolder">Save</button></div>';
+  openModal(h,'folder',{fid});
+}
+function renderReference(main){
+  const rows=S.refs;
+  const fs=rows.filter(r=>refVal(r,'factorySku')).length, ns=rows.filter(r=>refVal(r,'sku')).length, tr=rows.filter(r=>r.productId).length;
+  let h=filesHtml()+datesHtml()+'<section class="kpis">'+kpi('Gen 2 products',rows.length,'in this reference')+kpi('Factory SKUs',fs+' / '+rows.length,(rows.length-fs)+' still needed')+kpi('New SKUs',ns+' / '+rows.length,'assigned')+kpi('In the task tracker',tr,'products with deliverables')+'</section>';
+  if(!rows.length){main.innerHTML=h+'<div class="banner"><strong>No reference rows yet.</strong> Product names, SKUs and launch status will appear here.</div>';return}
+  h+='<div class="ref-wrap"><table class="ref"><colgroup><col class="w-t"><col class="w-s"><col class="w-n"><col class="w-t2"><col class="w-s"><col class="w-s"><col class="w-n"><col class="w-st"><col class="w-d"><col class="w-x"></colgroup>';
+  h+='<thead><tr class="band"><th colspan="3" class="b1">Gen 1</th><th colspan="7" class="b2">Gen 2</th></tr><tr><th>Product Title</th><th>SKU</th><th class="num">Stock</th><th class="g2">Product Title</th><th>New SKU</th><th>Factory SKU</th><th class="num">Incoming Stock</th><th>Site Status on Launch Date</th><th>Stock ETA / Mktg Unit</th><th></th></tr></thead><tbody>';
+  refSections().forEach((sec,name)=>{
+    h+='<tr class="rsec"><td colspan="9"><b>'+esc(name)+'</b> <span class="muted">'+sec.rows.length+'</span></td><td>'+(S.canWrite?'<button class="linkbtn" data-act="addRef" data-section="'+esc(name)+'" data-so="'+sec.order+'">Add row</button>':'')+'</td></tr>';
+    sec.rows.forEach(r=>{
+      h+='<tr>'+refCell(r,'gen1Title','t')+refCell(r,'gen1Sku','mono')+refCell(r,'gen1Stock','num')+refCell(r,'title','t g2')+refCell(r,'sku','mono')+refCell(r,'factorySku','mono')+refCell(r,'incomingStock','num')+refCell(r,'siteStatus','')+refDateCell(r);
+      h+='<td class="x">'+(r.productId?'<span class="trk" title="Has deliverables in the task tracker">Tracked</span>':'')+(S.canWrite?'<button class="del" data-act="delRef" data-id="'+esc(r.id)+'" aria-label="Delete row" title="Delete row">&times;</button>':'')+'</td></tr>'});
+  });
+  h+='</tbody></table></div><datalist id="siteList">'+SITE_STATUSES.map(s=>'<option value="'+esc(s)+'">').join('')+'</datalist>';
+  h+='<p class="muted" style="margin:0;font-size:12px">Edits save when you leave a field. New SKU and Factory SKU on tracked products also update the task tracker columns.</p>';
+  main.innerHTML=h;
+}
+async function saveRefField(el){
+  const r=S.refs.find(x=>x.id===el.dataset.ref);if(!r)return;const f=el.dataset.f;const v=el.value.trim();
+  if(refVal(r,f)===v)return;
+  if((f==='sku'||f==='factorySku')&&r.productId&&S.products.find(x=>x.id===r.productId)){await write(()=>D('/products/'+r.productId).update({[f]:v}))}
+  else await write(()=>D('/reference/'+r.id).update({[f]:v}));
+}
+
+/* ---------- modals ---------- */
+function openModal(html,kind,ctx){S.modal={kind,ctx};$('#modalRoot').innerHTML='<div class="ov" data-act="ovClose"><div class="modal" role="dialog" aria-modal="true">'+html+'</div></div>';const f=$('#modalRoot [autofocus]');if(f)f.focus()}
+function closeModal(){S.modal=null;$('#modalRoot').innerHTML=''}
+function targetLabel(target){
+  if(target==='all')return 'Whole '+(S.launch.name||'')+' collection';
+  const g=S.groups.find(x=>x.id===target);if(g)return g.name+' group ('+productsOf(g.id).length+' products)';
+  const p=S.products.find(x=>x.id===target);if(p)return p.name+' · '+(p.sku||'SKU TBD');return target;
+}
+function openCell(tid,target){
+  const t=S.tasks.find(x=>x.id===tid);const c=S.cells.get(cellId(tid,target))||{};const st=c.status||'ns';
+  let h='<div><h3>'+esc(t.name)+'</h3><div class="sub">'+esc(targetLabel(target))+'</div></div>';
+  h+='<div class="seg" role="group" aria-label="Status">'+STATUS.map(s=>'<button class="'+s.k+'" aria-pressed="'+(s.k===st)+'" data-act="setStatus" data-v="'+s.k+'"'+(S.canWrite?'':' disabled')+'>'+s.label+'</button>').join('')+'</div>';
+  h+='<label class="fld"><span>Notes</span><textarea id="m-notes"'+(S.canWrite?'':' readonly')+'>'+esc(c.notes||'')+'</textarea></label>';
+  const folder=folderFor(target);const eff=linkFor(tid,target);
+  h+='<label class="fld"><span>File or asset link</span><input id="m-link" type="url" placeholder="'+esc(folder?'Uses the product folder unless you add a specific link':'https://drive.google.com/...')+'" value="'+esc(c.link||'')+'"'+(S.canWrite?'':' readonly')+'></label>';
+  if(eff)h+='<div><a href="'+esc(eff)+'" target="_blank" rel="noopener">'+(c.link?'Open link':'Open product folder')+'</a></div>';
+  h+='<div class="actions"><button class="btn" data-act="close">Close</button>'+(S.canWrite?'<button class="btn primary" data-act="saveCell">Save notes</button>':'')+'</div>';
+  openModal(h,'cell',{tid,target});
+}
+function openTask(tid,preset){
+  const isNew=!tid;const t=isNew?{name:'',note:'',dept:S.tab,section:preset||'',scope:'product',groups:[],owner:'',due:''}:S.tasks.find(x=>x.id===tid);
+  const secList=[...sections(t.dept).keys()];
+  let h='<div><h3>'+(isNew?'New deliverable':'Edit deliverable')+'</h3><div class="sub">'+esc((depts().find(d=>d.id===t.dept)||{}).name||'')+'</div></div>';
+  h+='<label class="fld"><span>Name</span><input id="t-name" autofocus value="'+esc(t.name)+'"></label>';
+  h+='<label class="fld"><span>Detail (optional)</span><input id="t-note" value="'+esc(t.note||'')+'"></label>';
+  h+='<div class="row2"><label class="fld"><span>Section</span><input id="t-sec" list="secList" value="'+esc(t.section||'')+'"><datalist id="secList">'+secList.map(s=>'<option value="'+esc(s)+'">').join('')+'</datalist></label>';
+  h+='<label class="fld"><span>Tracked</span><select id="t-scope">'+['product','group','family'].map(s=>'<option value="'+s+'"'+(t.scope===s?' selected':'')+'>'+({product:'One per product',group:'One per group',family:'One for the whole collection'})[s]+'</option>').join('')+'</select></label></div>';
+  h+='<div class="row2"><label class="fld"><span>Owner</span><input id="t-owner" list="ownList" value="'+esc(t.owner||'')+'"><datalist id="ownList">'+owners().map(o=>'<option value="'+esc(o)+'">').join('')+'</datalist></label>';
+  h+='<label class="fld"><span>Target date</span><input id="t-due" type="date" value="'+esc(t.due||'')+'"></label></div>';
+  h+='<div class="fld"><span>Applies to</span><div class="checks">'+groupsSorted().map(g=>'<label><input type="checkbox" class="t-g" value="'+esc(g.id)+'"'+(applies(t,g.id)?' checked':'')+'> '+esc(g.name)+'</label>').join('')+'</div></div>';
+  h+='<div class="actions">'+(!isNew?'<button class="btn danger l" data-act="delTask">Delete</button>':'')+'<button class="btn" data-act="close">Cancel</button><button class="btn primary" data-act="saveTask">'+(isNew?'Add deliverable':'Save')+'</button></div>';
+  openModal(h,'task',{tid,dept:t.dept});
+}
+function openProduct(pid,gid){
+  const isNew=!pid;const p=isNew?{name:'',short:'',sku:'',factorySku:'',group:gid}:S.products.find(x=>x.id===pid);
+  const ro=S.canWrite?'':' readonly';
+  let h='<div><h3>'+(isNew?'New product':esc(p.name))+'</h3></div>';
+  h+='<label class="fld"><span>Product name</span><input id="p-name" autofocus value="'+esc(p.name)+'"'+ro+'></label>';
+  h+='<div class="row2"><label class="fld"><span>Column label</span><input id="p-short" placeholder="e.g. 15&quot; x 15&quot;" value="'+esc(p.short||'')+'"'+ro+'></label>';
+  h+='<label class="fld"><span>Group</span><select id="p-group"'+(S.canWrite?'':' disabled')+'>'+groupsSorted().map(g=>'<option value="'+esc(g.id)+'"'+(g.id===p.group?' selected':'')+'>'+esc(g.name)+'</option>').join('')+'</select></label></div>';
+  h+='<div class="row2"><label class="fld"><span>HPN SKU</span><input id="p-sku" class="mono" value="'+esc(p.sku||'')+'"'+ro+'></label>';
+  h+='<label class="fld"><span>Factory SKU</span><input id="p-fsku" class="mono" value="'+esc(p.factorySku||'')+'"'+ro+'></label></div>';
+  h+='<label class="fld"><span>Photo &amp; video folder</span><input id="p-drive" type="url" placeholder="https://drive.google.com/drive/folders/..." value="'+esc(p.driveLink||'')+'"'+ro+'></label>';
+  if(p.driveLink)h+='<div><a href="'+esc(p.driveLink)+'" target="_blank" rel="noopener">Open folder</a></div>';
+  h+='<div class="actions">'+(!isNew&&S.canWrite?'<button class="btn danger l" data-act="delProduct">Remove</button>':'')+'<button class="btn" data-act="close">'+(S.canWrite?'Cancel':'Close')+'</button>'+(S.canWrite?'<button class="btn primary" data-act="saveProduct">Save</button>':'')+'</div>';
+  openModal(h,'product',{pid,gid});
+}
+function openGroup(gid){
+  const isNew=!gid;const g=isNew?{name:''}:S.groups.find(x=>x.id===gid);
+  let h='<div><h3>'+(isNew?'New group':'Edit group')+'</h3><div class="sub">Products in a group share grouped deliverables like listing and setup videos.</div></div>';
+  h+='<label class="fld"><span>Group name</span><input id="g-name" autofocus value="'+esc(g.name)+'"></label>';
+  h+='<label class="fld"><span>Group folder (used by grouped videos)</span><input id="g-drive" type="url" placeholder="https://drive.google.com/drive/folders/..." value="'+esc(g.driveLink||'')+'"></label>';
+  h+='<div class="actions">'+(!isNew?'<button class="btn danger l" data-act="delGroup">Delete</button>':'')+'<button class="btn" data-act="close">Cancel</button><button class="btn primary" data-act="saveGroup">Save</button></div>';
+  openModal(h,'group',{gid});
+}
+function openLaunch(){
+  const L=S.launch;
+  let h='<div><h3>Launch round</h3></div><div class="row2"><label class="fld"><span>Collection</span><input id="l-name" value="'+esc(L.name||'')+'"></label><label class="fld"><span>Round</span><input id="l-round" type="number" min="1" value="'+esc(L.round||1)+'"></label></div>';
+  h+='<label class="fld"><span>Launch date</span><input id="l-date" type="date" value="'+esc(L.launchDate||'')+'"></label>';
+  h+='<label class="fld"><span>Main Drive folder</span><input id="l-drive" type="url" placeholder="https://drive.google.com/drive/folders/..." value="'+esc(L.driveLink||'')+'"></label>';
+  h+='<label class="fld"><span>Folder location</span><input id="l-path" placeholder="Marketing shared drive / GEN 2" value="'+esc(L.drivePath||'')+'"></label>';
+  h+='<div class="actions"><button class="btn" data-act="close">Cancel</button><button class="btn primary" data-act="saveLaunch">Save</button></div>';
+  openModal(h,'launch',{});
+}
+
+/* ---------- writes ---------- */
+async function write(fn,okMsg){
+  try{await fn();if(okMsg)toast(okMsg);return true}
+  catch(e){if(e&&e.code==='invalid_argument'){S.canWrite=false;render();toast('You have view-only access to this tracker.')}else toast('Could not save: '+((e&&e.message)||'try again'));return false}
+}
+const D=p=>S.db.doc(base()+p);
+function newId(prefix){return prefix+Date.now().toString(36)+Math.random().toString(36).slice(2,5)}
+
+const ACT={
+  tab(el){S.tab=el.dataset.id;lsSet('tab',S.tab);render();window.scrollTo(0,0)},
+  cell(el){openCell(el.dataset.task,el.dataset.target)},
+  async setStatus(el){const {tid,target}=S.modal.ctx;const id=cellId(tid,target);const cur=S.cells.get(id)||{};const v=el.dataset.v;
+    document.querySelectorAll('.seg button').forEach(b=>b.setAttribute('aria-pressed',String(b===el)));
+    await write(()=>D('/cells/'+id).set({task:tid,target,status:v,notes:cur.notes||'',link:cur.link||'',updatedAt:new Date().toISOString()}))},
+  async saveCell(){const {tid,target}=S.modal.ctx;const id=cellId(tid,target);const cur=S.cells.get(id)||{};
+    const notes=$('#m-notes').value,link=$('#m-link').value.trim();
+    if(await write(()=>D('/cells/'+id).set({task:tid,target,status:cur.status||'ns',notes,link,updatedAt:new Date().toISOString()}),'Saved'))closeModal()},
+  editTask(el){if(!S.canWrite)return;openTask(el.dataset.id)},
+  addTask(el){openTask(null,el.dataset.section||'')},
+  async saveTask(){const {tid,dept}=S.modal.ctx;const name=$('#t-name').value.trim();if(!name){toast('Give the deliverable a name.');return}
+    const checked=[...document.querySelectorAll('.t-g:checked')].map(i=>i.value);
+    const groups=checked.length===S.groups.length?[]:checked;
+    if(!checked.length){toast('Pick at least one group it applies to.');return}
+    const section=$('#t-sec').value.trim()||'General';
+    let order;const ex=tid&&S.tasks.find(x=>x.id===tid);
+    if(ex&&ex.section===section)order=ex.order;else{const same=deptTasks(dept).filter(t=>(t.section||'General')===section);order=same.length?Math.max(...same.map(t=>t.order||0))+0.01:Math.max(0,...deptTasks(dept).map(t=>t.order||0))+1}
+    const body={name,note:$('#t-note').value.trim(),dept,section,scope:$('#t-scope').value,groups,owner:$('#t-owner').value.trim(),due:$('#t-due').value,order};
+    const id=tid||newId('t');
+    if(await write(()=>D('/tasks/'+id).set(body),tid?'Saved':'Deliverable added'))closeModal()},
+  async delTask(el){if(el.dataset.confirm!=='1'){el.dataset.confirm='1';el.textContent='Click again to delete';return}
+    const {tid}=S.modal.ctx;closeModal();
+    await write(async()=>{await D('/tasks/'+tid).delete();for(const k of [...S.cells.keys()])if(k.startsWith(tid+'__'))await D('/cells/'+k).delete()},'Deliverable deleted')},
+  editProduct(el){openProduct(el.dataset.id)},
+  addProduct(el){openProduct(null,el.dataset.group)},
+  async saveProduct(){const {pid}=S.modal.ctx;const name=$('#p-name').value.trim();if(!name){toast('Give the product a name.');return}
+    const group=$('#p-group').value;const ex=pid&&S.products.find(x=>x.id===pid);
+    const order=ex&&ex.group===group?ex.order:Math.max(0,...productsOf(group).map(p=>p.order||0))+1;
+    const body={name,short:$('#p-short').value.trim(),sku:$('#p-sku').value.trim(),factorySku:$('#p-fsku').value.trim(),driveLink:$('#p-drive').value.trim(),group,order};
+    if(await write(()=>D('/products/'+(pid||newId('p'))).set(body),'Saved'))closeModal()},
+  async delProduct(el){if(el.dataset.confirm!=='1'){el.dataset.confirm='1';el.textContent='Click again to remove';return}
+    const {pid}=S.modal.ctx;closeModal();await write(()=>D('/products/'+pid).delete(),'Product removed')},
+  editGroup(el){if(!S.canWrite)return;openGroup(el.dataset.id)},
+  addGroup(){openGroup(null)},
+  async saveGroup(){const {gid}=S.modal.ctx;const name=$('#g-name').value.trim();if(!name){toast('Give the group a name.');return}
+    const ex=gid&&S.groups.find(x=>x.id===gid);const order=ex?ex.order:Math.max(0,...S.groups.map(g=>g.order||0))+1;
+    if(await write(()=>D('/groups/'+(gid||newId('g'))).set({name,order,driveLink:$('#g-drive').value.trim()}),'Saved'))closeModal()},
+  async delGroup(el){const {gid}=S.modal.ctx;if(productsOf(gid).length){toast('Move or remove its products first.');return}
+    if(el.dataset.confirm!=='1'){el.dataset.confirm='1';el.textContent='Click again to delete';return}
+    closeModal();await write(()=>D('/groups/'+gid).delete(),'Group deleted')},
+  editLaunch(){openLaunch()},
+  async saveLaunch(){const L=S.launch;const body=Object.assign({},L);delete body.id;
+    body.name=$('#l-name').value.trim()||L.name;body.round=Number($('#l-round').value)||L.round;body.launchDate=$('#l-date').value;body.driveLink=$('#l-drive').value.trim();body.drivePath=$('#l-path').value.trim();
+    if(await write(()=>S.db.doc(base()).set(body),'Saved'))closeModal()},
+  addShip(el){openShip(null,el.dataset.kind)},
+  editShip(el){openShip(el.dataset.id)},
+  async saveShip(){const {id}=S.modal.ctx;const label=$('#s-label').value.trim();if(!label){toast('Give the shipment a name.');return}
+    const ex=id&&S.ships.find(y=>y.id===id);const dt=$('#s-dtext').value.trim();
+    const body={kind:$('#s-kind').value,label,items:$('#s-items').value.trim(),status:$('#s-status').value.trim(),date:$('#s-date').value,dateText:dt,sortDate:(ex&&ex.dateText===dt&&ex.sortDate)||'',tracking:$('#s-track').value.trim(),refs:[...document.querySelectorAll('.s-r:checked')].map(i=>i.value),order:ex?ex.order||0:S.ships.length+1};
+    if(await write(()=>D('/shipments/'+(id||newId('s'))).set(body),'Saved'))closeModal()},
+  async delShip(el){if(el.dataset.confirm!=='1'){el.dataset.confirm='1';el.textContent='Click again to delete';return}
+    const {id}=S.modal.ctx;closeModal();await write(()=>D('/shipments/'+id).delete(),'Shipment removed')},
+  addFeat(){openFeat(null)},
+  editFeat(el){openFeat(el.dataset.id)},
+  async saveFeat(){const {id}=S.modal.ctx;const name=$('#ft-name').value.trim();if(!name){toast('Give the feature a name.');return}
+    const ex=id&&S.features.find(y=>y.id===id);
+    const body={name,before:$('#ft-before').value.trim(),after:$('#ft-after').value.trim(),applies:[...document.querySelectorAll('.ft-a:checked')].map(i=>i.value),notes:$('#ft-notes').value.trim(),verify:$('#ft-verify').value.trim(),source:$('#ft-src').value.trim(),order:ex?ex.order:Math.max(0,...S.features.map(y=>y.order||0))+1};
+    if(await write(()=>D('/features/'+(id||newId('f'))).set(body),'Saved'))closeModal()},
+  async delFeat(el){if(el.dataset.confirm!=='1'){el.dataset.confirm='1';el.textContent='Click again to delete';return}
+    const {id}=S.modal.ctx;closeModal();await write(()=>D('/features/'+id).delete(),'Feature deleted')},
+  async addSpec(el){const sec=el.dataset.section;const same=S.specs.filter(r=>r.section===sec);
+    await write(()=>D('/specs/'+newId('sp')).set({section:sec,sectionOrder:Number(el.dataset.so)||0,order:same.length?Math.max(...same.map(r=>r.order||0))+1:1,label:'New spec',hint:'',values:{}}),'Row added')},
+  async delSpec(el){if(el.dataset.confirm!=='1'){el.dataset.confirm='1';el.textContent='Delete?';el.classList.add('arm');setTimeout(()=>{if(el.isConnected){el.dataset.confirm='';el.innerHTML='&times;';el.classList.remove('arm')}},3000);return}
+    await write(()=>D('/specs/'+el.dataset.id).delete(),'Row deleted')},
+  addVideo(){openVideo(null)},
+  editVideo(el){if(!S.canWrite)return;openVideo(el.dataset.id)},
+  async saveVideo(){const {vid}=S.modal.ctx;const name=$('#v-name').value.trim();if(!name){toast('Give the video a name.');return}
+    const all=$('#v-all').checked;const prods=all?[]:[...document.querySelectorAll('.v-p:checked')].map(i=>i.value);
+    const ex=vid&&S.videos.find(x=>x.id===vid);const section=$('#v-sec').value;
+    const same=S.videos.filter(x=>(x.section||'Launch Videos')===section);
+    const order=ex&&(ex.section||'Launch Videos')===section?ex.order:(same.length?Math.max(...same.map(x=>x.order||0))+1:1);
+    const body=Object.assign({script:'ns',edit:'ns',thumb:false,status:'ns'},ex||{},{code:$('#v-code').value.trim(),name,section,products:prods,link:$('#v-link').value.trim(),owner:$('#v-owner').value.trim(),due:$('#v-due').value,notes:$('#v-notes').value.trim(),thumbNA:$('#v-thumbna').checked,order});
+    delete body.id;
+    if(await write(()=>D('/videos/'+(vid||newId('v'))).set(body),vid?'Saved':'Video added'))closeModal()},
+  async delVideo(el){if(el.dataset.confirm!=='1'){el.dataset.confirm='1';el.textContent='Click again to delete';return}
+    const {vid}=S.modal.ctx;closeModal();await write(()=>D('/videos/'+vid).delete(),'Video deleted')},
+  addFolder(){openFolder(null)},
+  editFolder(el){openFolder(el.dataset.id)},
+  async saveFolder(){const {fid}=S.modal.ctx;const name=$('#f-name').value.trim();if(!name){toast('Give the folder a name.');return}
+    const ex=fid&&S.folders.find(x=>x.id===fid);const order=ex?ex.order:Math.max(0,...S.folders.map(f=>f.order||0))+1;
+    if(await write(()=>D('/folders/'+(fid||newId('f'))).set({name,note:$('#f-note').value.trim(),link:$('#f-link').value.trim(),order}),'Saved'))closeModal()},
+  async delFolder(el){if(el.dataset.confirm!=='1'){el.dataset.confirm='1';el.textContent='Click again to delete';return}
+    const {fid}=S.modal.ctx;closeModal();await write(()=>D('/folders/'+fid).delete(),'Folder removed')},
+  async addRef(el){const sec=el.dataset.section;const so=Number(el.dataset.so)||0;const same=S.refs.filter(r=>r.section===sec);
+    const order=same.length?Math.max(...same.map(r=>r.order||0))+1:1;
+    await write(()=>D('/reference/'+newId('r')).set({section:sec,sectionOrder:so,order,gen1Title:'',gen1Sku:'',gen1Stock:'',title:'',sku:'',factorySku:'',incomingStock:'',siteStatus:''}),'Row added')},
+  async delRef(el){if(el.dataset.confirm!=='1'){el.dataset.confirm='1';el.textContent='Delete?';el.classList.add('arm');setTimeout(()=>{if(el.isConnected){el.dataset.confirm='';el.innerHTML='&times;';el.classList.remove('arm')}},3000);return}
+    await write(()=>D('/reference/'+el.dataset.id).delete(),'Row deleted')},
+  close(){closeModal()},
+  ovClose(el,ev){if(ev.target===el)closeModal()}
+};
+document.addEventListener('click',ev=>{const el=ev.target.closest('[data-act]');if(!el)return;const f=ACT[el.dataset.act];if(f){if(el.dataset.act!=='ovClose')ev.stopPropagation();f(el,ev)}});
+document.addEventListener('keydown',ev=>{if(ev.key==='Escape'&&S.modal)closeModal()});
+document.addEventListener('change',ev=>{
+  if(ev.target.id==='ownerSel'){S.owner=ev.target.value;render()}
+  else if(ev.target.id==='openOnly'){S.openOnly=ev.target.checked;render()}
+  else if(ev.target.id==='roundSel'){selectLaunch(ev.target.value)}
+  else if(ev.target.classList.contains('ri')){saveRefField(ev.target)}
+  else if(ev.target.classList.contains('si')){saveSpecField(ev.target)}
+  else if(ev.target.id==='featSel'){S.featFilter=ev.target.value;render()}
+  else if(ev.target.dataset&&ev.target.dataset.vf){const el=ev.target;const f=el.dataset.vf;const val=el.type==='checkbox'?el.checked:el.value;
+    if(el.tagName==='SELECT')el.className='pill '+val;
+    write(()=>D('/videos/'+el.dataset.vid).update({[f]:val}))}
+  else if(ev.target.classList.contains('v-p')){const a=$('#v-all');if(a&&ev.target.checked)a.checked=false}
+  else if(ev.target.id==='v-all'&&ev.target.checked){document.querySelectorAll('.v-p').forEach(i=>i.checked=false)}
+});
+document.addEventListener('keydown',ev=>{if(ev.key==='Enter'&&ev.target.classList&&(ev.target.classList.contains('ri')||ev.target.classList.contains('si')))ev.target.blur()});
+document.addEventListener('focusout',()=>{setTimeout(()=>{if(!S.pendingRender)return;const a=document.activeElement;if(a&&a.closest&&a.closest('.ref-wrap,.spec-wrap')&&a.matches('input'))return;render()},0)});
+
+/* ---------- subscriptions ---------- */
+function onErr(e){console.warn(e);if(e&&e.code==='revoked'){S.conn='unavailable';render()}}
+function selectLaunch(id){
+  S.subs.forEach(u=>{try{u()}catch(e){}});S.subs=[];
+  S.launchId=id||null;S.groups=[];S.products=[];S.tasks=[];S.refs=[];S.folders=[];S.videos=[];S.ships=[];S.specs=[];S.features=[];S.cells=new Map();S.loaded.tasks=false;
+  S.launch=S.launches.find(l=>l.id===id)||null;
+  if(id)lsSet('launch',id);
+  if(!id){render();return}
+  const col=n=>S.db.collection(base()+'/'+n);
+  S.subs.push(col('groups').onSnapshot(s=>{S.groups=s.docs.map(d=>Object.assign({id:d.id},d.data()));render()},onErr));
+  S.subs.push(col('products').onSnapshot(s=>{S.products=s.docs.map(d=>Object.assign({id:d.id},d.data()));render()},onErr));
+  S.subs.push(col('tasks').onSnapshot(s=>{S.tasks=s.docs.map(d=>Object.assign({id:d.id},d.data()));S.loaded.tasks=true;render()},onErr));
+  S.subs.push(col('features').onSnapshot(s=>{S.features=s.docs.map(d=>Object.assign({id:d.id},d.data()));render()},onErr));
+  S.subs.push(col('specs').onSnapshot(s=>{S.specs=s.docs.map(d=>Object.assign({id:d.id},d.data()));render()},onErr));
+  S.subs.push(col('shipments').onSnapshot(s=>{S.ships=s.docs.map(d=>Object.assign({id:d.id},d.data()));render()},onErr));
+  S.subs.push(col('videos').onSnapshot(s=>{S.videos=s.docs.map(d=>Object.assign({id:d.id},d.data()));render()},onErr));
+  S.subs.push(col('folders').onSnapshot(s=>{S.folders=s.docs.map(d=>Object.assign({id:d.id},d.data()));render()},onErr));
+  S.subs.push(col('reference').onSnapshot(s=>{S.refs=s.docs.map(d=>Object.assign({id:d.id},d.data()));render()},onErr));
+  S.subs.push(col('cells').onSnapshot(s=>{const m=new Map();s.docs.forEach(d=>m.set(d.id,d.data()));S.cells=m;render()},onErr));
+  render();
+}
+(async function boot(){
+  if(!window.claude||typeof window.claude.use!=='function'){S.conn='unavailable';render();return}
+  const db=await window.claude.use('db');
+  if(!db){S.conn='unavailable';render();return}
+  S.db=db;S.conn='ok';
+  window.claude.use('user').then(async u=>{if(!u)return;try{const c=await u.can('data.write');if(c===false){S.canWrite=false;render()}}catch(e){}});
+  db.collection('launches').onSnapshot(snap=>{
+    S.launches=snap.docs.map(d=>Object.assign({id:d.id},d.data())).sort((a,b)=>(a.round||0)-(b.round||0));
+    S.loaded.launches=true;
+    if(!S.launchId||!S.launches.find(l=>l.id===S.launchId)){const saved=lsGet('launch');const pick=S.launches.find(l=>l.id===saved)||S.launches[S.launches.length-1];selectLaunch(pick&&pick.id)}
+    else{S.launch=S.launches.find(l=>l.id===S.launchId);render()}
+  },onErr);
+})();
+})();
+</script>
+
+</body></html>
